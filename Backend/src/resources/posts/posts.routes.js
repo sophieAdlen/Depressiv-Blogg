@@ -6,14 +6,6 @@ import {getPosts, getPost, getPostsByUser, createPostByUser, updatePost, deleteP
 const router = express.Router();
 
 
-// GET /posts: Retrieve a list of posts.
-// POST /posts: Create a new post.
-// GET /posts/{postId}: Retrieve a specific post by ID.
-// PUT /posts/{postId}: Update a specific post by ID.
-// DELETE /posts/{postId}: Delete a specific post by ID.
-// GET /users/{userId}/posts: Retrieve all posts by a specific user.
-// POST /users/{userId}/posts: Create a new post for a specific user.
-
 // CRUD for posts
 router.get("/posts", getPosts);
 router.get("/posts/:id", getPost);

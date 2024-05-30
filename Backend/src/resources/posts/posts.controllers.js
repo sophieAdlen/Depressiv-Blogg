@@ -1,9 +1,5 @@
-import { pool } from "./../../db/connect.js";
-
-async function query(sql, params) {
-  const [results] = await pool.execute(sql, params);
-  return results;
-}
+// import { pool } from "./../../db/connect.js";
+import {prisma} from "../../db/connect.js"
 
 /**
  * @description Get all posts
@@ -11,7 +7,7 @@ async function query(sql, params) {
  */
 export async function getPosts(req, res) {
   try {
-    const result = await query("SELECT * FROM posts");
+    const result = await prisma.post.findMany();
 
     if (!result.length)
       return res.status(404).json({ message: "No posts found" });
@@ -32,12 +28,14 @@ export async function getPost(req, res) {
   try {
     const { id } = req.params;
 
-    const result = await query("SELECT * FROM posts WHERE id = ?", [id]);
+    const result = await prisma.post.findUnique({
+      where: { id: parseInt(id) },
+    });
 
-    if (!result.length)
+    if (!result)
       return res.status(404).json({ message: "Post not found" });
 
-    res.status(200).json(result[0]);
+    res.status(200).json(result);
   } catch (error) {
     console.error("Error details:", error);
 
@@ -49,26 +47,24 @@ export async function getPost(req, res) {
  * @description Get posts by user
  * @route GET /users/:userId/posts
  */
-
 export async function getPostsByUser(req, res) {
-    try {
-        const { userId } = req.params;
-    
-        const result = await query("SELECT * FROM posts WHERE userId = ?", [userId]);
-    
-        if (!result.length)
-        return res.status(404).json({ message: "No posts found for this user" });
-    
-        res.status(200).json(result);
-    } catch (error) {
-        console.error("Error details:", error);
-    
-        res.status(500).json({ error: "Database query failed!" });
-    }
-    
+  try {
+    const { userId } = req.params;
+
+    const result = await prisma.post.findMany({
+      where: { userId: parseInt(userId) },
+    });
+
+    if (!result.length)
+      return res.status(404).json({ message: "No posts found for this user" });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error details:", error);
+
+    res.status(500).json({ error: "Database query failed!" });
+  }
 }
-
-
 
 /**
  * @description Create post by user
@@ -76,20 +72,18 @@ export async function getPostsByUser(req, res) {
  */
 export async function createPostByUser(req, res) {
   try {
-
     const { userId } = req.params;
-
     const { title, content } = req.body;
 
-    const result = await query(
-      "INSERT INTO posts (title, content, userId) VALUES (?, ?, ?)",
-      [title, content, userId]
-    );
-    
-    if (result.affectedRows < 1)
-      return res.status(400).json({ error: "Post not created!" });
+    const result = await prisma.post.create({
+      data: {
+        title,
+        content,
+        authorId: parseInt(userId), // säkerställ att authorId är av typen Int
+      },
+    });
 
-    res.status(201).json({ id: result.insertId, message: "Post created!" });
+    res.status(201).json({ id: result.id, message: "Post created!" });
   } catch (error) {
     console.error("Error details:", error);
 
@@ -101,19 +95,15 @@ export async function createPostByUser(req, res) {
  * @description Update post
  * @route PUT /posts/:id
  */
-
 export async function updatePost(req, res) {
   try {
     const { id } = req.params;
     const { title, content } = req.body;
 
-    const result = await query(
-      "UPDATE posts SET title = ?, content = ? WHERE id = ?",
-      [title, content, id]
-    );
-
-    if(result.affectedRows < 1)
-      return res.status(404).json({ error: "Post not updated!" });
+    const result = await prisma.post.update({
+      where: { id: parseInt(id) },
+      data: { title, content },
+    });
 
     res.status(200).json({ message: "Post updated!" });
   } catch (error) {
@@ -127,22 +117,16 @@ export async function updatePost(req, res) {
  * @description Delete post
  * @route DELETE /posts/:id
  */
-
 export async function deletePost(req, res) {
-
   try {
     const { id } = req.params;
 
-    const result = await query("DELETE FROM posts WHERE id = ?", [id]);
+    await prisma.post.delete({
+      where: { id: parseInt(id) },
+    });
 
-
-    if(result.affectedRows < 1)
-        return res.status(404).json({ error: "Post not deleted!" });
-
-    res.status(200).json({message: "Post deleted!"});
-
+    res.status(200).json({ message: "Post deleted!" });
   } catch (error) {
-
     console.error("Error details:", error);
     res.status(500).json({ error: "Database query failed!" });
   }
