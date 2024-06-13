@@ -1,6 +1,8 @@
 // import { pool } from "./../../db/connect.js";
 import {prisma} from "../../db/connect.js"
 
+
+
 /**
  * @description Get all posts
  * @route GET /posts
@@ -9,14 +11,13 @@ export async function getPosts(req, res) {
   try {
     const result = await prisma.post.findMany();
 
-    if (!result.length)
-      return res.status(404).json({ message: "No posts found" });
+    if (!result.length) return res.status(404).json({ message: 'No posts found' });
 
     res.status(200).json(result);
   } catch (error) {
-    console.error("Error details:", error);
+    console.error('Error details:', error);
 
-    res.status(500).json({ error: "Database query failed!" });
+    res.status(500).json({ error: 'Database query failed!' });
   }
 }
 
@@ -32,16 +33,16 @@ export async function getPost(req, res) {
       where: { id: parseInt(id) },
     });
 
-    if (!result)
-      return res.status(404).json({ message: "Post not found" });
+    if (!result) return res.status(404).json({ message: 'Post not found' });
 
     res.status(200).json(result);
   } catch (error) {
-    console.error("Error details:", error);
+    console.error('Error details:', error);
 
-    res.status(500).json({ error: "Database query failed!" });
+    res.status(500).json({ error: 'Database query failed!' });
   }
 }
+
 
 /**
  * @description Get posts by user
@@ -52,19 +53,18 @@ export async function getPostsByUser(req, res) {
     const { userId } = req.params;
 
     const result = await prisma.post.findMany({
-      where: { userId: parseInt(userId) },
+      where: { authorId: parseInt(userId) }, // Använd authorId istället för userId
     });
 
-    if (!result.length)
-      return res.status(404).json({ message: "No posts found for this user" });
+    if (!result.length) return res.status(404).json({ message: 'No posts found for this user' });
 
     res.status(200).json(result);
   } catch (error) {
-    console.error("Error details:", error);
-
-    res.status(500).json({ error: "Database query failed!" });
+    console.error('Error details:', error);
+    res.status(500).json({ error: 'Database query failed!' });
   }
 }
+
 
 /**
  * @description Create post by user
@@ -83,11 +83,11 @@ export async function createPostByUser(req, res) {
       },
     });
 
-    res.status(201).json({ id: result.id, message: "Post created!" });
+    res.status(201).json({ id: result.id, message: 'Post created!' });
   } catch (error) {
-    console.error("Error details:", error);
+    console.error('Error details:', error);
 
-    res.status(500).json({ error: "Database query failed!" });
+    res.status(500).json({ error: 'Database query failed!' });
   }
 }
 
@@ -101,14 +101,13 @@ export async function updatePost(req, res) {
     const { title, content } = req.body;
 
     const result = await prisma.post.update({
-      where: { id: parseInt(id) },
+      where: { id: String(id) }, // Konvertera ID till String här
       data: { title, content },
     });
 
     res.status(200).json({ message: "Post updated!" });
   } catch (error) {
     console.error("Error details:", error);
-
     res.status(500).json({ error: "Database query failed!" });
   }
 }
@@ -121,8 +120,8 @@ export async function deletePost(req, res) {
   try {
     const { id } = req.params;
 
-    await prisma.post.delete({
-      where: { id: parseInt(id) },
+    const result = await prisma.post.delete({
+      where: { id: String(id) }, // Konvertera ID till String här
     });
 
     res.status(200).json({ message: "Post deleted!" });

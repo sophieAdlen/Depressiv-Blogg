@@ -3,7 +3,7 @@
 
 import {prisma} from "../../db/connect.js"
 import bcrypt from "bcrypt";
-
+import jwt from 'jsonwebtoken';
 
 /**
  * @description Get all users
@@ -13,14 +13,13 @@ export async function getUsers(req, res) {
   try {
     const result = await prisma.user.findMany();
 
-    if (!result.length)
-      return res.status(404).json({ message: "No users found" });
+    if (!result.length) return res.status(404).json({ message: 'No users found' });
 
     res.status(200).json(result);
   } catch (error) {
-    console.error("Error details:", error);
+    console.error('Error details:', error);
 
-    res.status(500).json({ error: "Database query failed!" });
+    res.status(500).json({ error: 'Database query failed!' });
   }
 }
 
@@ -36,14 +35,13 @@ export async function getUser(req, res) {
       where: { id: parseInt(id) },
     });
 
-    if (!result)
-      return res.status(404).json({ message: "User not found" });
+    if (!result) return res.status(404).json({ message: 'User not found' });
 
     res.status(200).json(result);
   } catch (error) {
-    console.error("Error details:", error);
+    console.error('Error details:', error);
 
-    res.status(500).json({ error: "Database query failed!" });
+    res.status(500).json({ error: 'Database query failed!' });
   }
 }
 
@@ -60,9 +58,7 @@ export async function createUser(req, res) {
       where: { email },
     });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ error: "User with this email already exists" });
+      return res.status(400).json({ error: 'User with this email already exists' });
     }
 
     // Krypterar lösenordet
@@ -77,11 +73,11 @@ export async function createUser(req, res) {
       },
     });
 
-    res.status(201).json({ id: result.id, message: "User created!" });
+    res.status(201).json({ id: result.id, message: 'User created!' });
   } catch (error) {
-    console.error("Error details:", error);
+    console.error('Error details:', error);
 
-    res.status(500).json({ error: "Database query failed!" });
+    res.status(500).json({ error: 'Database query failed!' });
   }
 }
 
@@ -89,7 +85,6 @@ export async function createUser(req, res) {
  * @description Update user
  * @route PUT /users/:id
  */
-
 export async function updateUser(req, res) {
   try {
     const { id } = req.params;
@@ -108,19 +103,18 @@ export async function updateUser(req, res) {
       },
     });
 
-    res.status(200).json({ message: "User updated!" });
+    res.status(200).json({ message: 'User updated!' });
   } catch (error) {
-    console.error("Error details:", error);
+    console.error('Error details:', error);
 
-    res.status(500).json({ error: "Database query failed!" });
+    res.status(500).json({ error: 'Database query failed!' });
   }
 }
 
 /**
- * @description Update user
+ * @description Delete user
  * @route DELETE /users/:id
  */
-
 export async function deleteUser(req, res) {
   try {
     const { id } = req.params;
@@ -129,14 +123,33 @@ export async function deleteUser(req, res) {
       where: { id: parseInt(id) },
     });
 
-    res.status(200).json({ message: "User deleted!" });
+    res.status(200).json({ message: 'User deleted!' });
   } catch (error) {
-    console.error("Error details:", error);
-    res.status(500).json({ error: "Database query failed!" });
+    console.error('Error details:', error);
+    res.status(500).json({ error: 'Database query failed!' });
   }
 }
 
+/**
+ * @description Login user
+ * @route POST /login
+ */
+export async function loginUser(req, res) {
+  try {
+    const { email, password } = req.body;
 
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(400).json({ message: 'Email or password is wrong' });
+
+    const validPass = await bcrypt.compare(password, user.password);
+    if (!validPass) return res.status(400).json({ message: 'Email or password is wrong' });
+
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.header('Authorization', 'Bearer ' + token).status(200).json({ message: 'Logged in successfully', token });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
 
 
 
